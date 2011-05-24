@@ -4,6 +4,10 @@
   </head>
   <body>
     <h3>Socket.IO chat</h3>
+    <input type=text id=in></input>    
+    <div id=messages>
+      
+    </div>
   </body>
   <script src="socket.io.js"></script> 
   <script src="jquery-1.6.1.min.js"></script>   
@@ -13,7 +17,8 @@
       console.log('connect') 
    }) 
    socket.on('message', function(a){ 
-    console.log('message', a.valueOf()) 
+    //console.log('message', a) 
+    $('#messages').prepend(a+'<br>');
    }) 
    socket.on('disconnect', function(){ 
     console.log('disconnect') 
