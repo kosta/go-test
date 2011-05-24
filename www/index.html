@@ -1,0 +1,23 @@
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+  </head>
+  <body>
+    <h3>Socket.IO chat</h3>
+  </body>
+  <script src="socket.io.js"></script> 
+  <script src="jquery-1.6.1.min.js"></script>   
+  <script> 
+   var socket = new io.Socket(); 
+   socket.on('connect', function(){ 
+      console.log('connect') 
+   }) 
+   socket.on('message', function(a){ 
+    console.log('message', a.valueOf()) 
+   }) 
+   socket.on('disconnect', function(){ 
+    console.log('disconnect') 
+   }) 
+   socket.connect(); 
+  </script> 
+</html>

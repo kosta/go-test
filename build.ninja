@@ -1,0 +1,9 @@
+rule compile
+  command = 6g -o $out $in
+
+rule link
+  command = 6l -o $out $in
+
+build main.6: compile main.go
+
+build main: link main.6
