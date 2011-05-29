@@ -3,3 +3,5 @@ main
 *.6
 *.a
 *.out
+foo
+hello-http
