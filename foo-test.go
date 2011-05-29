@@ -25,11 +25,16 @@ func main() {
   //sidenote: how would I assign something to *foo.SpammerInterface?
   
   //this doesn't work
-  var interfacePtrA *foo.SpammerInterface = &a
+  //"*foo.SpammerInterface is pointer to interface, not interface"
+  //var interfacePtrA *foo.SpammerInterface = &a
   
   //this doesn't work either
   //"cannot take the address of foo.SpammerInterface(a)"
   //var interfacePtrA *foo.SpammerInterface = &(foo.SpammerInterface(a))
+  
+  //this doesn't work either
+  //"*foo.SpammerInterface is pointer to interface, not interface"
+  //var interfacePtrA *foo.SpammerInterface = &(&a)
 }
 
 /*
