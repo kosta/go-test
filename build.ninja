@@ -4,6 +4,12 @@ rule compile
 rule link
   command = 6l -o $out $in
 
+build foo.6: compile foo.go
+
+build foo-test.6: compile foo-test.go || foo.6
+
+build foo: link foo-test.6 | foo.6
+
 build main.6: compile main.go
 
 build main: link main.6
