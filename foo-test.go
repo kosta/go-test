@@ -16,11 +16,16 @@ func main() {
   //interfaceA.Spam()
   
   //works:
-  var interfacePtrA foo.SpammerInterface = &a
-  interfacePtrA.Spam()
+  var interfaceFromPtrA foo.SpammerInterface = &a
+  interfaceFromPtrA.Spam()
   
   //so this is the short version:
   foo.SpammerInterface(&a).Spam()
+  
+  //sidenote: this doesn't work either
+  //"cannot take the address of foo.SpammerInterface(a)"
+  //var interfacePtrA *foo.SpammerInterface = &(foo.SpammerInterface(a))
+  //so how would I assign a *foo.SpammerInterface
 }
 
 /*
