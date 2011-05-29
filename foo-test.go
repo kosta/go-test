@@ -22,10 +22,14 @@ func main() {
   //so this is the short version:
   foo.SpammerInterface(&a).Spam()
   
-  //sidenote: this doesn't work either
+  //sidenote: how would I assign something to *foo.SpammerInterface?
+  
+  //this doesn't work
+  var interfacePtrA *foo.SpammerInterface = &a
+  
+  //this doesn't work either
   //"cannot take the address of foo.SpammerInterface(a)"
   //var interfacePtrA *foo.SpammerInterface = &(foo.SpammerInterface(a))
-  //so how would I assign a *foo.SpammerInterface
 }
 
 /*
