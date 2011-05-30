@@ -5,3 +5,4 @@ main
 *.out
 foo
 hello-http
+stringtest
