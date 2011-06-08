@@ -6,17 +6,37 @@ import (
   "os/signal"
 )
 
-func broadcast(connections map[net.Conn]bool, msg string) {
+func makeSenderChan(conn net.Conn) chan<- string {
+  ch := make(chan string)
+  go func() {
+    //close channel when returning
+    defer close(ch)
+    //close conn when returning
+    defer conn.Close()
+    
+    for {
+      s, ok := <-ch
+      if !ok { 
+        return
+      }
+      _, err := fmt.Fprint(conn, s)
+      if err != nil {
+        return
+      }
+    }
+  }()
+  return ch
+}
+
+func broadcast(connections map[chan<- string]bool, msg string) {
   for conn, _ := range(connections) {
-    go func() {
-      fmt.Fprint(conn, msg)
-    }()
+    conn <- msg
   }
 }
 
 func main() {
   newConnections := make(chan *net.TCPConn)
-  connections := make(map[net.Conn]bool)
+  connections := make(map[chan<- string]bool)
   
 	tcp, tcperr := net.ListenTCP("tcp", &net.TCPAddr{})
 	if tcperr != nil {
@@ -44,8 +64,8 @@ func main() {
 			  broadcast(connections, "Goodbye.\n")
 			  return 
 	    case conn := <- newConnections:
-	      connections[conn] = true
-  	    fmt.Fprint(conn, "Hello.\n")
+  	    fmt.Fprint(conn, "Hello.\n")	    
+	      connections[makeSenderChan(conn)] = true
 	  }
 	}
 }
