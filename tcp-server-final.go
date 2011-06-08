@@ -25,16 +25,16 @@ func makeChanForConn(conn net.Conn, brokenChannels chan chan<- string) chan<- st
 	ch := make(chan string, 100) //buffer of 100 strings
 	go func() {
 		for {
-		  addr := conn.RemoteAddr()
+			addr := conn.RemoteAddr()
 			msg, ok := <-ch
 			if !ok {
-			  fmt.Println("channel broken for conn ", addr)
+				fmt.Println("channel broken for conn ", addr)
 				brokenChannels <- ch
 				return
 			}
 			_, err := fmt.Fprint(conn, msg)
 			if err != nil {
-			  fmt.Printf("Write error: closing %s\n", addr)
+				fmt.Printf("Write error: closing %s\n", addr)
 			}
 		}
 	}()
@@ -42,16 +42,16 @@ func makeChanForConn(conn net.Conn, brokenChannels chan chan<- string) chan<- st
 }
 
 func main() {
-  //open TCP port - slide 52
-  tcp, tcperr := net.ListenTCP("tcp", &net.TCPAddr{})
+	//open TCP port - slide 52
+	tcp, tcperr := net.ListenTCP("tcp", &net.TCPAddr{})
 	if tcperr != nil {
 		fmt.Println("Error opening TCP socket:", tcperr)
 		return
 	}
-	fmt.Println("Listening on", tcp.Addr().Network(), tcp.Addr())  
-  
+	fmt.Println("Listening on", tcp.Addr().Network(), tcp.Addr())
+
 	//tcp.Accept gofunc - slide 55
-	newConnections := make(chan *net.TCPConn)	
+	newConnections := make(chan *net.TCPConn)
 	go func() {
 		for {
 			conn, connerr := tcp.AcceptTCP()
@@ -80,15 +80,15 @@ func main() {
 	brokenChannels := make(chan chan<- string)  //channel of channels
 	for {
 		select {
-		case conn := <- newConnections:
+		case conn := <-newConnections:
 			go readLinesAndSendToChan(conn, messages)
 			connections[makeChanForConn(conn, brokenChannels)] = true
-		case msg := <- messages:
-		  fmt.Print("got message: ", msg)
+		case msg := <-messages:
+			fmt.Print("got message: ", msg)
 			for conn, _ := range connections {
 				conn <- msg
 			}
-		case broken := <- brokenChannels:
+		case broken := <-brokenChannels:
 			close(broken)
 			connections[broken] = false, false //remove from map        
 		}
