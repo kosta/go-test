@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"bufio"
+	"sync"
+	"os/signal"
 )
 
 //slide 58
@@ -21,9 +23,14 @@ func readLinesAndSendToChan(conn net.Conn, messages chan string) {
 }
 
 //slide 60
-func makeChanForConn(conn net.Conn, brokenChannels chan chan<- string) chan<- string {
+func makeChanForConn(conn net.Conn, 
+                     brokenChannels chan chan<- string,
+                     waits *sync.WaitGroup) chan<- string {
+  waits.Add(1)
+  fmt.Println(waits)
 	ch := make(chan string, 100) //buffer of 100 strings
 	go func() {
+	  defer waits.Done()
 		for {
 			addr := conn.RemoteAddr()
 			msg, ok := <-ch
@@ -35,6 +42,7 @@ func makeChanForConn(conn net.Conn, brokenChannels chan chan<- string) chan<- st
 			_, err := fmt.Fprint(conn, msg)
 			if err != nil {
 				fmt.Printf("Write error: closing %s\n", addr)
+				return
 			}
 		}
 	}()
@@ -75,6 +83,8 @@ func main() {
 			}
 		}*/
 
+  waits := new(sync.WaitGroup)
+  
 	//slide 59
 	connections := make(map[chan<- string]bool) //used as set
 	brokenChannels := make(chan chan<- string)  //channel of channels
@@ -82,7 +92,7 @@ func main() {
 		select {
 		case conn := <-newConnections:
 			go readLinesAndSendToChan(conn, messages)
-			connections[makeChanForConn(conn, brokenChannels)] = true
+			connections[makeChanForConn(conn, brokenChannels, waits)] = true
 		case msg := <-messages:
 			fmt.Print("got message: ", msg)
 			for conn, _ := range connections {
@@ -91,6 +101,18 @@ func main() {
 		case broken := <-brokenChannels:
 			close(broken)
 			connections[broken] = false, false //remove from map        
+		case signal := <- signal.Incoming:
+		  fmt.Printf("got signal: '%s'. Quitting.\n", signal)
+		  tcp.Close()
+		  //discard data for brokenChannels
+		  go func() { for _ = range brokenChannels {} }()
+		  for conn, _ := range connections {
+		    close(conn)
+		  }
+		  fmt.Println("waiting to flush existing messages...")
+		  waits.Wait()
+		  close(brokenChannels)
+		  return
 		}
 	}
 }
