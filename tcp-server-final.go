@@ -10,16 +10,16 @@ import (
 
 //slide 58
 func readLinesAndSendToChan(conn net.Conn, messages chan string) {
+	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
+			fmt.Printf("Read error: %s, closing %s\n", err, conn.RemoteAddr())
 			break
 		} //closes conn due to defer
 		messages <- line
 	}
-	fmt.Printf("Read error: closing %s\n", conn.RemoteAddr())
-	conn.Close()
 }
 
 //slide 60
@@ -29,8 +29,8 @@ waits *sync.WaitGroup) chan<- string {
 	waits.Add(1)
 	ch := make(chan string, 100) //buffer of 100 strings
 	go func() {
-		defer waits.Done()
 		defer func() { brokenChannels <- ch }()
+		defer waits.Done()
 		addr := conn.RemoteAddr()
 		for msg := range ch {
 			_, err := fmt.Fprint(conn, msg)
@@ -98,11 +98,6 @@ func main() {
 		case signal := <-signal.Incoming:
 			fmt.Printf("got signal: '%s'. Quitting.\n", signal)
 			tcp.Close()
-			//discard data for brokenChannels
-			go func() {
-				for _ = range brokenChannels {
-				}
-			}()
 			for conn, _ := range connections {
 				close(conn)
 			}
