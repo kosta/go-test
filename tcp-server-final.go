@@ -23,15 +23,15 @@ func readLinesAndSendToChan(conn net.Conn, messages chan string) {
 }
 
 //slide 60
-func writeLinesFromChan(conn net.Conn, 
-                     brokenChannels chan chan<- string,
-                     waits *sync.WaitGroup) chan<- string {
-  waits.Add(1)
+func writeLinesFromChan(conn net.Conn,
+brokenChannels chan chan<- string,
+waits *sync.WaitGroup) chan<- string {
+	waits.Add(1)
 	ch := make(chan string, 100) //buffer of 100 strings
 	go func() {
-	  defer waits.Done()
-	  defer func() { brokenChannels <- ch }()
-	  addr := conn.RemoteAddr()
+		defer waits.Done()
+		defer func() { brokenChannels <- ch }()
+		addr := conn.RemoteAddr()
 		for msg := range ch {
 			_, err := fmt.Fprint(conn, msg)
 			if err != nil {
@@ -77,8 +77,8 @@ func main() {
 			}
 		}*/
 
-  waits := new(sync.WaitGroup)
-  
+	waits := new(sync.WaitGroup)
+
 	//slide 59
 	connections := make(map[chan<- string]bool) //used as set
 	brokenChannels := make(chan chan<- string)  //channel of channels
@@ -95,18 +95,21 @@ func main() {
 		case broken := <-brokenChannels:
 			close(broken)
 			connections[broken] = false, false //remove from map        
-		case signal := <- signal.Incoming:
-		  fmt.Printf("got signal: '%s'. Quitting.\n", signal)
-		  tcp.Close()
-		  //discard data for brokenChannels
-		  go func() { for _ = range brokenChannels {} }()
-		  for conn, _ := range connections {
-		    close(conn)
-		  }
-		  fmt.Println("waiting to flush existing messages...")
-		  waits.Wait()
-		  close(brokenChannels)
-		  return
+		case signal := <-signal.Incoming:
+			fmt.Printf("got signal: '%s'. Quitting.\n", signal)
+			tcp.Close()
+			//discard data for brokenChannels
+			go func() {
+				for _ = range brokenChannels {
+				}
+			}()
+			for conn, _ := range connections {
+				close(conn)
+			}
+			fmt.Println("waiting to flush existing messages...")
+			waits.Wait()
+			close(brokenChannels)
+			return
 		}
 	}
 }
