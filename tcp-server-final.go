@@ -16,33 +16,27 @@ func readLinesAndSendToChan(conn net.Conn, messages chan string) {
 		if err != nil {
 			break
 		} //closes conn due to defer
-		messages <- string(line)
+		messages <- line
 	}
 	fmt.Printf("Read error: closing %s\n", conn.RemoteAddr())
 	conn.Close()
 }
 
 //slide 60
-func makeChanForConn(conn net.Conn, 
+func writeLinesFromChan(conn net.Conn, 
                      brokenChannels chan chan<- string,
                      waits *sync.WaitGroup) chan<- string {
   waits.Add(1)
-  fmt.Println(waits)
 	ch := make(chan string, 100) //buffer of 100 strings
 	go func() {
 	  defer waits.Done()
-		for {
-			addr := conn.RemoteAddr()
-			msg, ok := <-ch
-			if !ok {
-				fmt.Println("channel broken for conn ", addr)
-				brokenChannels <- ch
-				return
-			}
+	  defer func() { brokenChannels <- ch }()
+	  addr := conn.RemoteAddr()
+		for msg := range ch {
 			_, err := fmt.Fprint(conn, msg)
 			if err != nil {
 				fmt.Printf("Write error: closing %s\n", addr)
-				return
+				break
 			}
 		}
 	}()
@@ -51,7 +45,7 @@ func makeChanForConn(conn net.Conn,
 
 func main() {
 	//open TCP port - slide 52
-	tcp, tcperr := net.ListenTCP("tcp", &net.TCPAddr{})
+	tcp, tcperr := net.Listen("tcp", ":0")
 	if tcperr != nil {
 		fmt.Println("Error opening TCP socket:", tcperr)
 		return
@@ -59,10 +53,10 @@ func main() {
 	fmt.Println("Listening on", tcp.Addr().Network(), tcp.Addr())
 
 	//tcp.Accept gofunc - slide 55
-	newConnections := make(chan *net.TCPConn)
+	newConnections := make(chan net.Conn)
 	go func() {
 		for {
-			conn, connerr := tcp.AcceptTCP()
+			conn, connerr := tcp.Accept()
 			if connerr != nil {
 				return //skip error handling for this example
 			} else {
@@ -92,7 +86,7 @@ func main() {
 		select {
 		case conn := <-newConnections:
 			go readLinesAndSendToChan(conn, messages)
-			connections[makeChanForConn(conn, brokenChannels, waits)] = true
+			connections[writeLinesFromChan(conn, brokenChannels, waits)] = true
 		case msg := <-messages:
 			fmt.Print("got message: ", msg)
 			for conn, _ := range connections {
